@@ -1,0 +1,11 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt update && \
+    apt install -y --no-install-recommends \
+        iproute2 iputils-ping curl netcat-openbsd busybox procps ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+CMD ["sleep", "infinity"]
+

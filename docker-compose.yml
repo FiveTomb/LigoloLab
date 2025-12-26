@@ -1,8 +1,10 @@
+# Both pivot1 and pivot2 are based off of the ubuntu:24.04
 services:
   pivot1:
-    image: ubuntu:24.04
+    build:
+      context: .
+      dockerfile: Dockerfile.pivot
     container_name: pivot1
-    command: sleep infinity
     cap_add: ["NET_ADMIN"]
     devices:
       - /dev/net/tun:/dev/net/tun
@@ -17,9 +19,10 @@ services:
         ipv4_address: 10.200.1.20
 
   pivot2:
-    image: ubuntu:24.04
+    build:
+      context: .
+      dockerfile: Dockerfile.pivot
     container_name: pivot2
-    command: sleep infinity
     cap_add: ["NET_ADMIN"]
     devices:
       - /dev/net/tun:/dev/net/tun

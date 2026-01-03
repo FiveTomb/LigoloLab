@@ -4,8 +4,27 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt update && \
     apt install -y --no-install-recommends \
-        iproute2 iputils-ping curl netcat-openbsd busybox procps ca-certificates && \
+        bash iproute2 iputils-ping curl netcat-openbsd busybox procps ca-certificates sudo && \
     rm -rf /var/lib/apt/lists/*
+
+# --- Users (idempotent) ---
+RUN id -u websvc >/dev/null 2>&1 || useradd -m -s /bin/bash websvc && \
+    id -u backup >/dev/null 2>&1 || useradd -m -s /bin/bash backup && \
+    id -u admin >/dev/null 2>&1 || useradd -m -s /bin/bash admin && \
+    usermod -s /bin/bash websvc && \
+    usermod -s /bin/bash backup && \
+    usermod -s /bin/bash admin && \
+    echo "backup:backup123" | chpasswd && \
+    echo "admin:Winter2024!" | chpasswd
+
+# --- Sudo misconfiguration (intentional) ---
+RUN echo "backup ALL=(ALL) NOPASSWD:/usr/bin/tar" >> /etc/sudoers
+
+# --- Fake sensitive files ---
+RUN mkdir -p /opt/backups && \
+    echo "DB_PASSWORD=SuperSecretDBPass!" > /opt/backups/db.conf && \
+    chown backup:backup /opt/backups/db.conf && \
+    chmod 600 /opt/backups/db.conf
 
 CMD ["sleep", "infinity"]
 

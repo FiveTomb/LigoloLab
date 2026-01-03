@@ -29,5 +29,12 @@ Kali (host)
 ## Usage
 
 ```bash
+docker compose build --no-cache
 docker compose up -d
+
+## Teardown
+
+```bash
+docker compose down
+docker image prune -f
 

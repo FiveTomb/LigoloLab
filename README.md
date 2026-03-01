@@ -1,11 +1,3 @@
-Absolutely — GitHub supports collapsible sections using `<details>` and `<summary>`. That’s perfect for hiding the attack path and solution while keeping the README clean.
-
-Below is your modified GitHub-style README section with the path and solution hidden behind click-to-reveal blocks.
-
-You can paste this directly into your `README.md`.
-
----
-
 # 🔐 Ligolo Multi-Hop Pivot Lab (Docker Edition)
 
 ![Docker](https://img.shields.io/badge/Docker-Required-blue)
